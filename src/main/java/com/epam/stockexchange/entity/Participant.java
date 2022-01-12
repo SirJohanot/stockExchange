@@ -6,6 +6,8 @@ import com.epam.stockexchange.exchangesystem.TransactionType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Random;
 
 public class Participant implements Runnable {
@@ -15,18 +17,18 @@ public class Participant implements Runnable {
     private static final double MINIMUM_TRANSACTION_SIZE = 0.01;
 
     private int id;
-    private double eur;
-    private double usd;
-    private double byn;
+    private BigDecimal eur = new BigDecimal(0).setScale(2, RoundingMode.DOWN);
+    private BigDecimal usd = new BigDecimal(0).setScale(2, RoundingMode.DOWN);
+    private BigDecimal byn = new BigDecimal(0).setScale(2, RoundingMode.DOWN);
 
     public Participant() {
     }
 
-    public Participant(int id, double eur, double usd, double byn) {
+    public Participant(int id, BigDecimal eur, BigDecimal usd, BigDecimal byn) {
         this.id = id;
-        this.eur = eur;
-        this.usd = usd;
-        this.byn = byn;
+        this.eur = eur.setScale(2, RoundingMode.DOWN);
+        this.usd = usd.setScale(2, RoundingMode.DOWN);
+        this.byn = byn.setScale(2, RoundingMode.DOWN);
     }
 
     @Override
@@ -37,7 +39,7 @@ public class Participant implements Runnable {
             TransactionType transactionToMake = TransactionType.values()[decisionMaker
                     .nextInt(TransactionType.values()
                             .length)];
-            double maximumAvailableOfCurrency;
+            BigDecimal maximumAvailableOfCurrency;
             switch (transactionToMake) {
                 case BYN_TO_EUR:
                 case BYN_TO_USD:
@@ -52,35 +54,35 @@ public class Participant implements Runnable {
                     maximumAvailableOfCurrency = usd;
                     break;
                 default:
-                    maximumAvailableOfCurrency = 0;
+                    maximumAvailableOfCurrency = BigDecimal.valueOf(0).setScale(2, RoundingMode.DOWN);
                     break;
             }
-            double amountToGive = MINIMUM_TRANSACTION_SIZE + (maximumAvailableOfCurrency - MINIMUM_TRANSACTION_SIZE) * decisionMaker.nextDouble();
-            double amountToReceive = amountToGive;
+            BigDecimal amountToGive = new BigDecimal(MINIMUM_TRANSACTION_SIZE + (maximumAvailableOfCurrency.doubleValue() - MINIMUM_TRANSACTION_SIZE) * decisionMaker.nextDouble()).setScale(2, RoundingMode.DOWN);
+            BigDecimal amountToReceive = amountToGive;
             switch (transactionToMake) {
                 case BYN_TO_EUR:
-                    amountToReceive /= StockExchangePlatform.BYN_TO_EUR_RATE;
+                    amountToReceive = amountToReceive.divide(StockExchangePlatform.BYN_TO_EUR_RATE, RoundingMode.HALF_UP);
                     break;
                 case USD_TO_BYN:
-                    amountToReceive /= StockExchangePlatform.USD_TO_BYN_RATE;
+                    amountToReceive = amountToReceive.divide(StockExchangePlatform.USD_TO_BYN_RATE, RoundingMode.HALF_UP);
                     break;
                 case BYN_TO_USD:
-                    amountToReceive /= StockExchangePlatform.BYN_TO_USD_RATE;
+                    amountToReceive = amountToReceive.divide(StockExchangePlatform.BYN_TO_USD_RATE, RoundingMode.HALF_UP);
                     break;
                 case USD_TO_EUR:
-                    amountToReceive /= StockExchangePlatform.USD_TO_EUR_RATE;
+                    amountToReceive = amountToReceive.divide(StockExchangePlatform.USD_TO_EUR_RATE, RoundingMode.HALF_UP);
                     break;
                 case EUR_TO_BYN:
-                    amountToReceive /= StockExchangePlatform.EUR_TO_BYN_RATE;
+                    amountToReceive = amountToReceive.divide(StockExchangePlatform.EUR_TO_BYN_RATE, RoundingMode.HALF_UP);
                     break;
                 case EUR_TO_USD:
-                    amountToReceive /= StockExchangePlatform.EUR_TO_USD_RATE;
+                    amountToReceive = amountToReceive.divide(StockExchangePlatform.EUR_TO_USD_RATE, RoundingMode.HALF_UP);
                     break;
                 default:
-                    amountToReceive = 0;
+                    amountToReceive = BigDecimal.valueOf(0).setScale(2, RoundingMode.DOWN);
                     break;
             }
-            int numberOfParticipants = exchangePlatform.participantsNumber();
+            int numberOfParticipants = exchangePlatform.getParticipantsNumber();
             int participantToExchangeWith = decisionMaker.nextInt(numberOfParticipants);
             try {
                 exchangePlatform.validateAndPerformTransaction(this, participantToExchangeWith, transactionToMake, amountToGive, amountToReceive);
@@ -88,10 +90,6 @@ public class Participant implements Runnable {
                 LOGGER.error(e);
             }
         }
-    }
-
-    public boolean transactionQuery() {
-        return decisionMaker.nextBoolean();
     }
 
     public int getId() {
@@ -102,28 +100,28 @@ public class Participant implements Runnable {
         this.id = id;
     }
 
-    public double getEur() {
+    public BigDecimal getEur() {
         return eur;
     }
 
-    public void setEur(double eur) {
-        this.eur = eur;
+    public void setEur(BigDecimal eur) {
+        this.eur = eur.setScale(2, RoundingMode.DOWN);
     }
 
-    public double getUsd() {
+    public BigDecimal getUsd() {
         return usd;
     }
 
-    public void setUsd(double usd) {
-        this.usd = usd;
+    public void setUsd(BigDecimal usd) {
+        this.usd = usd.setScale(2, RoundingMode.DOWN);
     }
 
-    public double getByn() {
+    public BigDecimal getByn() {
         return byn;
     }
 
-    public void setByn(double byn) {
-        this.byn = byn;
+    public void setByn(BigDecimal byn) {
+        this.byn = byn.setScale(2, RoundingMode.DOWN);
     }
 
     @Override
@@ -138,26 +136,21 @@ public class Participant implements Runnable {
         if (id != that.id) {
             return false;
         }
-        if (Double.compare(that.eur, eur) != 0) {
+        if (eur != null ? !eur.equals(that.eur) : that.eur != null) {
             return false;
         }
-        if (Double.compare(that.usd, usd) != 0) {
+        if (usd != null ? !usd.equals(that.usd) : that.usd != null) {
             return false;
         }
-        return Double.compare(that.byn, byn) == 0;
+        return byn != null ? byn.equals(that.byn) : that.byn == null;
     }
 
     @Override
     public int hashCode() {
-        int result;
-        long temp;
-        result = id;
-        temp = Double.doubleToLongBits(eur);
-        result = 31 * result + (int) (temp ^ (temp >>> 32));
-        temp = Double.doubleToLongBits(usd);
-        result = 31 * result + (int) (temp ^ (temp >>> 32));
-        temp = Double.doubleToLongBits(byn);
-        result = 31 * result + (int) (temp ^ (temp >>> 32));
+        int result = id;
+        result = 31 * result + (eur != null ? eur.hashCode() : 0);
+        result = 31 * result + (usd != null ? usd.hashCode() : 0);
+        result = 31 * result + (byn != null ? byn.hashCode() : 0);
         return result;
     }
 
