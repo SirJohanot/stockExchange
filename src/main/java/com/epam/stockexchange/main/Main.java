@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
 public class Main {
 
     private static final Logger LOGGER = LogManager.getLogger(Main.class);
-    private static final String PARTICIPANTS_FILE_PATH = "src/main/resources/participants";
+    private static final String PARTICIPANTS_FILE_PATH = "src/main/resources/participants.json";
 
     public static void main(String[] args) {
         programExecution();
