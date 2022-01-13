@@ -20,11 +20,11 @@ public class StockExchangePlatform {
     public static final BigDecimal EUR_TO_USD_RATE = BigDecimal.valueOf(0.9);
     public static final BigDecimal USD_TO_EUR_RATE = BigDecimal.valueOf(1.11);
     private static final int MAXIMUM_QUEUED_TRANSACTIONS = 6;
+    private static final Lock lock = new ReentrantLock();
 
     private static StockExchangePlatform INSTANCE;
 
     private final Semaphore semaphore = new Semaphore(MAXIMUM_QUEUED_TRANSACTIONS);
-    private final Lock lock = new ReentrantLock();
     private final Set<Participant> participants = new HashSet<>();
     private final TransactionPerformer transactionPerformer = new TransactionPerformer();
     private final TransactionValidator transactionValidator = new TransactionValidator();
@@ -64,23 +64,18 @@ public class StockExchangePlatform {
     }
 
     public static StockExchangePlatform getInstance() {
-        Lock firstLock = new ReentrantLock();
-        Lock secondLock = new ReentrantLock();
-        firstLock.lock();
-        try {
-            if (INSTANCE == null) {
-                secondLock.lock();
-                try {
-                    if (INSTANCE == null) {
-                        INSTANCE = new StockExchangePlatform();
-                    }
-                } finally {
-                    secondLock.unlock();
+        StockExchangePlatform localInstance = INSTANCE;
+        if (localInstance == null) {
+            lock.lock();
+            try {
+                localInstance = INSTANCE;
+                if (localInstance == null) {
+                    INSTANCE = localInstance = new StockExchangePlatform();
                 }
+            } finally {
+                lock.unlock();
             }
-        } finally {
-            firstLock.unlock();
         }
-        return INSTANCE;
+        return localInstance;
     }
 }
